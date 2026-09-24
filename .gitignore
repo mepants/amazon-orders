@@ -1,0 +1,12 @@
+# Secrets & Extension distribution binaries
+*.crx
+*.pem
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
