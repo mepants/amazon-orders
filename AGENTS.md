@@ -9,12 +9,11 @@ This document serves as the persistent knowledge base, architectural reference, 
 - **Name:** Craig's Budget Parse / Amazon Order Extractor
 - **Platform:** Google Chrome Extension (Manifest V3)
 - **Primary Goal:** Extract purchase and order details from the Amazon Orders page (`www.amazon.co.uk`) to facilitate personal budgeting, expense tracking, and data export.
-- **Secondary / Legacy Capability:** Parsing transactions from Sainsbury's Bank credit card statements (`online.sainsburysbank.co.uk`).
 - **Core User Flow:**
   1. The user navigates to their Amazon Order History page.
   2. The user clicks the extension action icon in the toolbar, opening the popup.
   3. The user clicks the **Amazon** button.
-  4. The extension executes an extraction script on the active page tab, parses DOM data, formats the extracted order details, and initiates a file download (e.g. JSON/CSV).
+  4. The extension executes an extraction script on the active page tab, parses DOM data, formats the extracted order details, and initiates a file download (`amazon-<timestamp>.json`).
 
 ---
 
@@ -26,17 +25,16 @@ This document serves as the persistent knowledge base, architectural reference, 
 ├── AGENTS.md                       # This living documentation & agent tracking file
 ├── BudgetExtension.crx             # Packaged extension archive (dist/artifact; gitignored)
 ├── BudgetExtension.pem             # Private key for packed CRX extension ID stability (gitignored)
+├── sample-output/                  # Reference output captures from past runs
+│   └── amazon-1789068337408.json   # Sample extracted JSON dataset
+├── sample-pages/                   # Offline HTML test fixtures
+│   └── amazon-orders-sep-26.html   # Sample Amazon orders page capture
 └── BudgetExtension/                # Source directory for unpacked extension loading
     ├── manifest.json               # Chrome Extension Manifest V3 configuration
-    ├── manifest_v2.json            # Legacy Manifest V2 configuration (reference only)
     ├── background.js               # MV3 Background Service Worker (declarativeContent page rules)
-    ├── background (1).js           # Legacy MV2 background script backup
     ├── popup.html                  # Popup interface providing action buttons
     ├── popup.js                    # MV3 popup controller; triggers scripts via chrome.scripting
-    ├── popup (1).js                # Legacy MV2 popup script (tabs.executeScript)
     ├── amazon.js                   # Primary Amazon DOM extractor (extracts JSON, auto-downloads)
-    ├── amazon_orders.js            # Alternate/legacy line-by-line regex HTML parser (CSV prompt)
-    ├── sainsburys.js               # Sainsbury's statement parser (extracts CSV, auto-downloads)
     └── images/                     # Extension icons (16, 32, 48, 128 px)
         ├── get_started16.png
         ├── get_started32.png
@@ -45,10 +43,10 @@ This document serves as the persistent knowledge base, architectural reference, 
 ```
 
 ### File Status & Notes:
-- **`manifest.json`**: Current Manifest V3 manifest. Requests `tabs`, `scripting`, `declarativeContent`, and `storage` permissions, with host permissions for `https://www.amazon.co.uk/*` and `https://online.sainsburysbank.co.uk/*`.
-- **`amazon.js`**: Current primary scraper for Amazon. Selects `div.order-card` elements, extracts order numbers (`yohtmlc-order-id`), order dates, order totals (`yohtmlc-order-total`), identifies digital vs. physical orders, iterates shipment delivery boxes (`div.delivery-box`), and downloads `amazon-<timestamp>.json`.
-- **`amazon_orders.js`**: An older/alternative regex-based scraper operating on raw HTML lines, displaying a CSV string in a `prompt()` modal.
-- **`popup (1).js`, `background (1).js`, `manifest_v2.json`**: Legacy MV2 artifacts. Note that Chrome deprecated MV2, so keep all active development strictly on Manifest V3 in `manifest.json`, `background.js`, and `popup.js`.
+- **`manifest.json`**: Current Manifest V3 manifest. Requests `tabs`, `scripting`, `declarativeContent`, and `storage` permissions, with host permissions for `https://www.amazon.co.uk/*`.
+- **`amazon.js`**: Primary scraper for Amazon. Selects `div.order-card` elements, extracts order numbers (`yohtmlc-order-id`), order dates, order totals (`yohtmlc-order-total`), identifies digital vs. physical orders, iterates shipment delivery boxes (`div.delivery-box`), and downloads `amazon-<timestamp>.json`.
+- **`popup.html` / `popup.js`**: Cleaned up to solely trigger the Amazon extraction script using `async`/`await`.
+- **`background.js`**: Background service worker applying declarativeContent rules only on `www.amazon.co.uk`.
 
 ---
 
@@ -114,16 +112,16 @@ interface ExtractedItem {
 
 ## 6. Known Challenges & Target Enhancements
 
-- [ ] **Amazon Selector Resilience:**
-  - Modernize and harden selectors against Amazon's modern order page DOM (handle variations across EU/UK/US Amazon domains).
+- [x] **Amazon Selector Resilience:**
+  - Modernized and hardened selectors in `amazon.js` against Amazon's latest DOM layout (CSD-rendered cards, slot-id attributes, flexbox/grid containers) while maintaining full backwards compatibility with legacy formats.
 - [ ] **Multi-page & Pagination Scrapes:**
   - Currently extracts only the 10 orders loaded on the visible page. Support navigating pagination or aggregating across multiple pages/years.
 - [ ] **Export Options:**
   - Support CSV, JSON, and direct clipboard copying in addition to JSON file downloads.
 - [ ] **UI Modernization:**
   - Modernize `popup.html` with clean typography, status indicators, and feedback messages when extraction completes.
-- [ ] **Codebase Cleanup:**
-  - Clarify or retire duplicate legacy MV2 files (`background (1).js`, `popup (1).js`, `manifest_v2.json`) to prevent accidental edits to obsolete scripts.
+- [x] **Codebase Cleanup:**
+  - Retired duplicate legacy MV2 files (`background (1).js`, `popup (1).js`, `manifest_v2.json`) and removed unused Sainsbury's / alternative scraper scripts (`sainsburys.js`, `amazon_orders.js`).
 
 ---
 
@@ -135,3 +133,5 @@ interface ExtractedItem {
 | :--- | :--- | :--- |
 | 2026-09-24 | Assistant | Created `AGENTS.md` documenting project structure, MV3 architecture, Amazon extraction schema, and future backlog. |
 | 2026-09-24 | Assistant | Initialized Git repository on `main` branch and added `.gitignore` protecting `*.crx`, `*.pem`, and OS files. |
+| 2026-09-24 | Assistant | Removed all dependencies on deleted files (`sainsburys.js`, `amazon_orders.js`, MV2 backups): updated `manifest.json` description & host permissions, `background.js` declarative rules, and `popup.html`/`popup.js`. |
+| 2026-09-24 | Assistant | Updated `amazon.js` with multi-tier fallback parsing: resolved `TypeError: Cannot read properties of null (reading 'querySelector')` on delivery boxes, added slot-id order number detection, modern flex container item extraction, action button filtering, and robust error handling. |

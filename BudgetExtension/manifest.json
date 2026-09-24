@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Craig's Budget Parse",
   "version": "1.0",
-  "description": "Parse web pages for budget data",
+  "description": "Extract purchase and order details from Amazon order history",
   "permissions": [
     "tabs",
     "scripting",
@@ -10,8 +10,7 @@
     "storage"
   ],
   "host_permissions": [
-    "https://www.amazon.co.uk/*",
-    "https://online.sainsburysbank.co.uk/*"
+    "https://www.amazon.co.uk/*"
   ],
   "background": {
     "service_worker": "background.js"
